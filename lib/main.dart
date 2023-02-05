@@ -1,9 +1,23 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+Random rand = Random();
 
 void main() {
   runApp(const MyApp());
+}
+
+List<double> secondsToHoursAndMinutes(double convert) {
+  List<double> values = [];
+  double hours = (convert / 60.0).floor() * 1.0;
+  double minutes = convert - hours * 60;
+  values.add(hours);
+  values.add(minutes);
+
+  return values;
 }
 
 class MyApp extends StatelessWidget {
@@ -11,15 +25,27 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        appBarTheme: const AppBarTheme(color: Colors.white),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      darkTheme: ThemeData.dark().copyWith(
+        appBarTheme: const AppBarTheme(color: Color(0xFF303030)),
+      ),
+      home: MyHomePage(
+        title: 'Flutter Demo Home Page',
+        key: _homePageKey,
+      ),
     );
   }
 }
+
+final GlobalKey<_MyHomePageState> _homePageKey = GlobalKey<_MyHomePageState>();
+final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+final GlobalKey _statsKey = GlobalKey();
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -31,16 +57,30 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  double calories = 444;
+  double activeTimeInSeconds = 222;
+  double kilometres = 4.13;
+
+  int stepCount = 5000;
+  int goalSteps = 20000;
 
   @override
   Widget build(BuildContext context) {
+    double circularThingySize = min(MediaQuery
+        .of(context)
+        .size
+        .width, 256);
+
     return Scaffold(
       key: _scaffoldKey,
-      drawer: NavBar(),
+      drawer: AppDrawer(),
+      drawerEdgeDragWidth: MediaQuery
+          .of(context)
+          .size
+          .width,
       appBar: AppBar(
-          backgroundColor: Colors.white,
-          //title: Text(widget.title),
+        //backgroundColor: Colors.white,
+        //title: Text(widget.title),
           leading: Container(
             width: 200,
             child: Row(
@@ -49,7 +89,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () {
                       _scaffoldKey.currentState?.openDrawer();
                     },
-                    icon: const Icon(Icons.menu_outlined, color: Colors.grey))
+                    icon: const Icon(
+                      Icons.menu_outlined,
+                      color: Colors.grey,
+                    )),
               ],
             ),
           )),
@@ -57,44 +100,38 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           children: [
             const SizedBox(
-              height: 16,
+              height: 32,
             ),
             Center(
               child: FittedBox(
-                fit: BoxFit.fitWidth,
                 child: Row(
-                  children: const [
-                    SizedBox(
+                  children: [
+                    const SizedBox(
                       width: 16,
                     ),
                     StatsDisplay(
+                        key: _statsKey,
                         topText: "Calories",
                         bottomText: "{0}",
-                        values: [444],
+                        values: [calories],
                         color: Colors.orangeAccent,
-                        delay: 0.2),
-                    SizedBox(
-                      width: 16,
-                    ),
+                        delay: const Duration(milliseconds: 700)),
                     StatsDisplay(
                       topText: "Active Time",
                       bottomText: "{0}h {1}m",
-                      values: [3, 34],
+                      values: secondsToHoursAndMinutes(activeTimeInSeconds),
                       color: Colors.blue,
-                      delay: 0.6,
-                    ),
-                    SizedBox(
-                      width: 16,
+                      delay: const Duration(milliseconds: 1100),
                     ),
                     StatsDisplay(
                       topText: "Distance",
                       bottomText: "{0} km",
-                      values: [7.2],
+                      values: [kilometres],
                       color: Colors.green,
                       decimalDigits: 1,
-                      delay: 1,
+                      delay: const Duration(milliseconds: 1500),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 16,
                     ),
                   ],
@@ -102,43 +139,23 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             const SizedBox(
-              height: 32,
+              height: 8,
             ),
-            Stack(children: [
-              Container(
-                  width: 172,
-                  height: 172,
-                  child: CircularProgressIndicator(
-                    backgroundColor: Colors.black12,
-                    color: Colors.redAccent,
-                    value: 0.8,
-                    strokeWidth: 8,
-                  )),
-              Container(
-                width: 172,
-                height: 172,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "1600/2000",
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      Text("Steps",
-                          style: Theme.of(context).textTheme.titleLarge),
-                      Text("of goal",
-                          style: Theme.of(context).textTheme.labelLarge),
-                    ],
-                  ),
-                ),
-              ),
-            ]),
+            StepCounterRadial(
+                stepCount: stepCount,
+                maxSteps: goalSteps,
+                circularThingySize: circularThingySize,
+                delay: const Duration(milliseconds: 2000),
+                strokeSize: 16),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          setState(() {
+            stepCount += rand.nextInt(500) + 1;
+          });
+        },
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
@@ -146,14 +163,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class NavBar extends StatefulWidget {
-  const NavBar({Key? key}) : super(key: key);
+class AppDrawer extends StatefulWidget {
+  const AppDrawer({Key? key}) : super(key: key);
 
   @override
-  State<NavBar> createState() => _NavBarState();
+  State<AppDrawer> createState() => _AppDrawerState();
 }
 
-class _NavBarState extends State<NavBar> {
+class _AppDrawerState extends State<AppDrawer> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -182,7 +199,10 @@ class _NavBarState extends State<NavBar> {
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Text(
                               "Step Counter",
-                              style: Theme.of(context).textTheme.titleLarge,
+                              style: Theme
+                                  .of(context)
+                                  .textTheme
+                                  .titleLarge,
                             ))
                       ],
                     ),
@@ -192,15 +212,30 @@ class _NavBarState extends State<NavBar> {
               ListTile(
                 leading: Icon(Icons.refresh),
                 title: Text("Randomize Values"),
-                onTap: () {},
+                onTap: () {
+                  _homePageKey.currentState?.setState(() {
+                    _homePageKey.currentState?.calories =
+                        rand.nextInt(1000) * 1.0;
+                    _homePageKey.currentState?.activeTimeInSeconds =
+                        rand.nextInt(1000) * 1.0;
+                    _homePageKey.currentState?.kilometres =
+                        rand.nextInt(100) * 1.0;
+                  });
+                },
               ),
             ],
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(8.0),
             child: Align(
               alignment: Alignment.bottomLeft,
-              child: Text("Concept App by Robi @ github.com/RobiFox"),
+              child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Text("Concept App by Robi @ github.com/RobiFox",
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .bodySmall)),
             ),
           ),
         ],
@@ -215,16 +250,15 @@ class StatsDisplay extends StatefulWidget {
   final List<double> values;
   final Color color;
   final int decimalDigits;
-  final double delay;
+  final Duration delay;
 
-  const StatsDisplay(
-      {Key? key,
-      required this.topText,
-      required this.bottomText,
-      required this.color,
-      required this.values,
-      this.decimalDigits = 0,
-      this.delay = 0});
+  const StatsDisplay({super.key,
+    required this.topText,
+    required this.bottomText,
+    required this.color,
+    required this.values,
+    this.decimalDigits = 0,
+    this.delay = const Duration()});
 
   @override
   State<StatsDisplay> createState() => _StatsDisplayState();
@@ -239,6 +273,8 @@ class _StatsDisplayState extends State<StatsDisplay>
   List<Animation> _animation = [];
   late Animation _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  bool displayIncreasingValue = true;
 
   @override
   void initState() {
@@ -255,7 +291,7 @@ class _StatsDisplayState extends State<StatsDisplay>
       //var tempAnimation = Tween(begin: 0.0, end: widget.values[i]).animate(_controller);
       var tempAnimation = Tween<double>(begin: 0.0, end: widget.values[i])
           .animate(
-              CurvedAnimation(parent: _controller, curve: Curves.decelerate));
+          CurvedAnimation(parent: _controller, curve: Curves.decelerate));
       _controller.addListener(() {
         setState(() {});
       });
@@ -265,10 +301,16 @@ class _StatsDisplayState extends State<StatsDisplay>
     _fadeAnimation =
         CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
     _slideAnimation = Tween<Offset>(
-            begin: const Offset(0, 0.4), end: const Offset(0, 0))
+        begin: const Offset(0, 0.4), end: const Offset(0, 0))
         .animate(CurvedAnimation(parent: _slideController, curve: Curves.ease));
 
-    Timer(Duration(milliseconds: (widget.delay * 1000).toInt()), () {
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        displayIncreasingValue = false;
+      }
+    });
+
+    Timer(widget.delay, () {
       setState(() {
         _controller.forward();
         _fadeController.forward();
@@ -296,26 +338,194 @@ class _StatsDisplayState extends State<StatsDisplay>
   @override
   Widget build(BuildContext context) {
     List<double> animationValues = [];
-    for (Animation animation in _animation) {
-      animationValues.add(animation.value);
+
+    if (displayIncreasingValue) {
+      for (Animation animation in _animation) {
+        animationValues.add(animation.value);
+      }
     }
 
-    return Column(
-      children: [
-        Text(widget.topText, style: Theme.of(context).textTheme.headlineSmall),
-        SlideTransition(
-          position: _slideAnimation,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 1),
-            opacity: _fadeAnimation.value,
-            child: Text(convertText(widget.bottomText, animationValues),
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineMedium
-                    ?.copyWith(color: widget.color)),
-          ),
-        )
-      ],
+    return Container(
+      width: 148,
+      child: Column(
+        children: [
+          Text(widget.topText,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headlineSmall),
+          SlideTransition(
+            position: _slideAnimation,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 1),
+              opacity: _fadeAnimation.value,
+              child: Text(
+                  convertText(widget.bottomText,
+                      displayIncreasingValue ? animationValues : widget.values),
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headlineMedium
+                      ?.copyWith(color: widget.color)),
+            ),
+          )
+        ],
+      ),
     );
+  }
+}
+
+class StepCounterRadial extends StatefulWidget {
+  final int stepCount;
+  final int maxSteps;
+  final double circularThingySize;
+  final Duration delay;
+  final double strokeSize;
+
+  const StepCounterRadial({Key? key,
+    required this.stepCount,
+    required this.maxSteps,
+    required this.circularThingySize,
+    required this.strokeSize,
+    this.delay = const Duration()})
+      : super(key: key);
+
+  @override
+  State<StepCounterRadial> createState() => _StepCounterRadialState();
+}
+
+class _StepCounterRadialState extends State<StepCounterRadial>
+    with TickerProviderStateMixin {
+  late AnimationController _appearController;
+  late AnimationController _fillController;
+
+  late Animation<double> _strokeSize;
+  late Animation<double> _fillAnimation;
+
+  bool canShow = false;
+  bool finished = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _appearController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _fillController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
+    _strokeSize = Tween<double>(begin: 0, end: widget.strokeSize).animate(CurvedAnimation(parent: _appearController, curve: Curves.easeOut));
+    _fillAnimation = Tween<double>(begin: 0, end: widget.stepCount / widget.maxSteps).animate(CurvedAnimation(parent: _fillController, curve: Curves.easeOutExpo));
+
+    _appearController.addStatusListener((status) {
+      if(status == AnimationStatus.completed) {
+        _fillController.forward();
+      }
+    });
+
+    _fillController.addStatusListener((status) {
+      if(status == AnimationStatus.completed) {
+        finished = true;
+      }
+    });
+
+    _appearController.addListener(() {setState(() {});});
+    _fillController.addListener(() {setState(() {});});
+
+    Timer(widget.delay, () {
+      setState(() {
+        _appearController.forward();
+        canShow = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _appearController.dispose();
+    _fillController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.circularThingySize,
+      height: widget.circularThingySize,
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Stack(fit: StackFit.passthrough, children: [
+          Container(
+              child: canShow ? CircularProgressIndicator(
+                backgroundColor: Colors.black12,
+                color: Colors.redAccent,
+                value: finished ? widget.stepCount / widget.maxSteps :_fillAnimation.value,
+                strokeWidth: _strokeSize.value,
+              ) : Container()),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FadingWidget(
+                  duration: const Duration(milliseconds: 500),
+                  delay: widget.delay,
+                  child: Column(
+                    children: [
+                      Text(
+                        "${widget.stepCount} / ${widget.maxSteps}",
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
+                      ),
+                      Text("Steps", style: Theme
+                          .of(context)
+                          .textTheme
+                          .titleLarge),
+                      Text("of goal",
+                          style: Theme
+                              .of(context)
+                              .textTheme
+                              .labelLarge),
+                    ],
+                  )
+                ),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class FadingWidget extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final bool beginByDefault;
+  final Duration delay;
+  const FadingWidget({Key? key, required this.child, required this.duration, this.delay = const Duration(), this.beginByDefault = true}) : super(key: key);
+
+  @override
+  State<FadingWidget> createState() => _FadingWidgetState();
+}
+
+class _FadingWidgetState extends State<FadingWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _tween;
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _tween = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    Timer(widget.delay, () {
+      setState(() {
+        _controller.forward();
+      });
+    },);
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(opacity: _tween.value, duration: widget.duration, child: widget.child);
   }
 }
