@@ -267,11 +267,9 @@ class StatsDisplay extends StatefulWidget {
 class _StatsDisplayState extends State<StatsDisplay>
     with TickerProviderStateMixin {
   late AnimationController _controller;
-  late AnimationController _fadeController;
   late AnimationController _slideController;
 
   List<Animation> _animation = [];
-  late Animation _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
   bool displayIncreasingValue = true;
@@ -282,8 +280,6 @@ class _StatsDisplayState extends State<StatsDisplay>
 
     _controller =
         AnimationController(vsync: this, duration: const Duration(seconds: 1));
-    _fadeController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 100));
     _slideController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 500));
 
@@ -298,8 +294,6 @@ class _StatsDisplayState extends State<StatsDisplay>
       _animation.add(tempAnimation);
     }
 
-    _fadeAnimation =
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
     _slideAnimation = Tween<Offset>(
         begin: const Offset(0, 0.4), end: const Offset(0, 0))
         .animate(CurvedAnimation(parent: _slideController, curve: Curves.ease));
@@ -313,7 +307,6 @@ class _StatsDisplayState extends State<StatsDisplay>
     Timer(widget.delay, () {
       setState(() {
         _controller.forward();
-        _fadeController.forward();
         _slideController.forward();
       });
     });
@@ -322,7 +315,6 @@ class _StatsDisplayState extends State<StatsDisplay>
   @override
   void dispose() {
     _controller.dispose();
-    _fadeController.dispose();
     _slideController.dispose();
     super.dispose();
   }
@@ -356,9 +348,9 @@ class _StatsDisplayState extends State<StatsDisplay>
                   .headlineSmall),
           SlideTransition(
             position: _slideAnimation,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 1),
-              opacity: _fadeAnimation.value,
+            child: FadingWidget(
+              duration: const Duration(milliseconds: 250),
+              delay: widget.delay,
               child: Text(
                   convertText(widget.bottomText,
                       displayIncreasingValue ? animationValues : widget.values),
