@@ -59,9 +59,9 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   double calories = 444;
   double activeTimeInSeconds = 222;
-  double kilometres = 4.13;
+  double kilometres = 7.6;
 
-  int stepCount = 5000;
+  int stepCount = rand.nextInt(2500) + 5000;
   int goalSteps = 20000;
 
   @override
@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
     double circularThingySize = min(MediaQuery
         .of(context)
         .size
-        .width, 256);
+        .width, 320);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -146,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 maxSteps: goalSteps,
                 circularThingySize: circularThingySize,
                 delay: const Duration(milliseconds: 2000),
-                strokeSize: 16),
+                strokeSize: 20),
           ],
         ),
       ),
@@ -466,7 +466,7 @@ class _StepCounterRadialState extends State<StepCounterRadial>
                         style: Theme
                             .of(context)
                             .textTheme
-                            .headlineSmall,
+                            .headlineMedium,
                       ),
                       Text("Steps", style: Theme
                           .of(context)
